@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Hệ thống nhận diện biển số xe tự động ALPR sử dụng trí tuệ nhân tạo YOLOv10 - UET AI System">
+    <meta name="keywords" content="ALPR, nhận diện biển số, AI, YOLOv10, UET">
+    <title>ALPR Dashboard — Hệ Thống Nhận Diện Biển Số Xe AI</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <canvas id="particle-canvas"></canvas>
+    <div id="cursor-glow"></div>
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <div class="logo-icon">
+                    <i data-lucide="scan-line"></i>
+                </div>
+                <span class="logo-text">ALPR<span class="logo-accent">.AI</span></span>
+            </a>
+
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#hero" class="nav-link active" data-section="hero">Tổng Quan</a></li>
+                <li><a href="#camera" class="nav-link" data-section="camera">Camera</a></li>
+                <li><a href="#history" class="nav-link" data-section="history">Lịch Sử</a></li>
+                <li><a href="#violations" class="nav-link" data-section="violations">Phạt Nguội</a></li>
+                <li><a href="#search" class="nav-link" data-section="search">Tìm Kiếm</a></li>
+            </ul>
+
+            <div class="nav-right">
+                <div class="live-clock" id="live-clock">
+                    <i data-lucide="clock" class="clock-icon"></i>
+                    <span id="clock-time">--:--:--</span>
+                </div>
+                <div class="system-status" id="system-status">
+                    <span class="status-dot"></span>
+                    <span class="status-text">Đang kết nối...</span>
+                </div>
+                <button class="nav-toggle" id="nav-toggle" aria-label="Toggle menu">
+                    <i data-lucide="menu"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO SECTION - Thống kê tổng quan -->
+    <section class="hero-section" id="hero">
+        <div class="hero-bg-shapes">
+            <div class="shape shape-1"></div>
+            <div class="shape shape-2"></div>
+            <div class="shape shape-3"></div>
+        </div>
+
+        <div class="container">
+            <div class="hero-header animate-on-scroll">
+                <div class="badge">
+                    <i data-lucide="sparkles"></i>
+                    <span>Powered by YOLOv10 & Deep Learning</span>
+                </div>
+                <h1 class="hero-title">
+                    Hệ Thống Nhận Diện
+                    <span class="gradient-text">Biển Số Xe</span>
+                    Thông Minh
+                </h1>
+                <p class="hero-subtitle">
+                    Hệ thống AI tiên tiến sử dụng kiến trúc 2 giai đoạn, nhận diện và đọc biển số xe thời gian thực với
+                    độ chính xác cao.
+                </p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid animate-on-scroll">
+                <div class="stat-card" id="stat-total">
+                    <div class="stat-icon-wrap blue">
+                        <i data-lucide="car"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" data-target="0" id="stat-total-num">0</span>
+                        <span class="stat-label">Xe Đã Nhận Diện</span>
+                    </div>
+                    <div class="stat-trend up">
+                        <i data-lucide="trending-up"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="stat-violations">
+                    <div class="stat-icon-wrap red">
+                        <i data-lucide="alert-triangle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" data-target="0" id="stat-violations-num">0</span>
+                        <span class="stat-label">Vi Phạm Phát Hiện</span>
+                    </div>
+                    <div class="stat-trend down">
+                        <i data-lucide="shield-alert"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="stat-plates">
+                    <div class="stat-icon-wrap green">
+                        <i data-lucide="fingerprint"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" data-target="0" id="stat-plates-num">0</span>
+                        <span class="stat-label">Biển Số Duy Nhất</span>
+                    </div>
+                    <div class="stat-trend up">
+                        <i data-lucide="bar-chart-3"></i>
+                    </div>
+                </div>
+
+                <div class="stat-card" id="stat-today">
+                    <div class="stat-icon-wrap purple">
+                        <i data-lucide="calendar-check"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-number" data-target="0" id="stat-today-num">0</span>
+                        <span class="stat-label">Nhận Diện Hôm Nay</span>
+                    </div>
+                    <div class="stat-trend up">
+                        <i data-lucide="activity"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CAMERA LIVE FEED -->
+    <section class="section camera-section" id="camera">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="video"></i>
+                    <span>Camera Thời Gian Thực</span>
+                </div>
+                <h2 class="section-title">Giám Sát <span class="gradient-text">Camera AI</span></h2>
+                <p class="section-desc">Theo dõi luồng camera trực tiếp với AI nhận diện biển số tự động</p>
+            </div>
+
+            <div class="camera-grid animate-on-scroll">
+                <div class="camera-card main-camera">
+                    <div class="camera-header">
+                        <div class="camera-label">
+                            <span class="cam-dot live"></span>
+                            <span>CAM-01 — BTL-THPTTTNT-36</span>
+                        </div>
+                        <div class="camera-actions">
+                            <button class="cam-btn" id="btn-load-video" title="Tải Video">
+                                <i data-lucide="film"></i>
+                            </button>
+                            <button class="cam-btn" id="btn-start-camera" title="Bật Camera">
+                                <i data-lucide="play"></i>
+                            </button>
+                            <button class="cam-btn" id="btn-stop-camera" title="Tắt Camera" disabled>
+                                <i data-lucide="square"></i>
+                            </button>
+                            <button class="cam-btn" id="btn-fullscreen" title="Toàn màn hình">
+                                <i data-lucide="maximize-2"></i>
+                            </button>
+                            <input type="file" id="video-file-input" accept="video/*" style="display:none">
+                        </div>
+                    </div>
+                    <div class="camera-viewport" id="camera-viewport">
+                        <div class="scan-overlay">
+                            <div class="scan-line"></div>
+                            <div class="scan-corners">
+                                <span class="corner tl"></span>
+                                <span class="corner tr"></span>
+                                <span class="corner bl"></span>
+                                <span class="corner br"></span>
+                            </div>
+                        </div>
+                        <video id="camera-video" autoplay muted playsinline></video>
+                        <div class="camera-placeholder" id="camera-placeholder">
+                            <i data-lucide="video-off"></i>
+                            <p>Camera chưa được kích hoạt</p>
+                            <span>Nhấn <b>Play</b> để mở webcam hoặc <b>Film</b> để tải video</span>
+                        </div>
+                    </div>
+                    <div class="camera-footer">
+                        <span class="cam-res"><i data-lucide="monitor"></i> 1280×720</span>
+                        <span class="cam-fps"><i data-lucide="gauge"></i> <span id="fps-counter">0</span> FPS</span>
+                        <span class="cam-status" id="cam-status-text">
+                            <i data-lucide="wifi-off"></i> Chờ kết nối
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Recent Detections Sidebar -->
+                <div class="recent-detections">
+                    <div class="recent-header">
+                        <h3><i data-lucide="list"></i> Phát Hiện Gần Đây</h3>
+                        <button class="refresh-btn" id="btn-refresh-recent" title="Làm mới">
+                            <i data-lucide="refresh-cw"></i>
+                        </button>
+                    </div>
+                    <div class="recent-list" id="recent-list">
+                        <!-- Dynamic content loaded by JS -->
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                        <div class="skeleton-item"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HISTORY TABLE -->
+    <section class="section history-section" id="history">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="database"></i>
+                    <span>Cơ Sở Dữ Liệu</span>
+                </div>
+                <h2 class="section-title">Lịch Sử <span class="gradient-text">Nhận Diện</span></h2>
+                <p class="section-desc">Toàn bộ lịch sử xe đi qua camera, lưu trữ trên PostgreSQL</p>
+            </div>
+
+            <div class="table-card animate-on-scroll">
+                <div class="table-toolbar">
+                    <div class="table-info">
+                        <span id="table-count">0 bản ghi</span>
+                    </div>
+                    <div class="table-actions">
+                        <select id="log-limit" class="select-input">
+                            <option value="20">20 bản ghi</option>
+                            <option value="50" selected>50 bản ghi</option>
+                            <option value="100">100 bản ghi</option>
+                        </select>
+                        <button class="btn-primary" id="btn-refresh-logs">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Tải lại</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="data-table" id="logs-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Biển Số</th>
+                                <th>Thời Gian</th>
+                                <th>Ảnh Gốc</th>
+                                <th>Ảnh Biển Số</th>
+                                <th>Vi Phạm</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-tbody">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="logs-pagination"></div>
+
+                <div class="table-empty" id="logs-empty" style="display: none;">
+                    <i data-lucide="inbox"></i>
+                    <p>Chưa có dữ liệu nhận diện</p>
+                    <span>Dữ liệu sẽ xuất hiện khi hệ thống AI bắt đầu xử lý</span>
+                </div>
+
+                <div class="table-loading" id="logs-loading">
+                    <div class="spinner"></div>
+                    <span>Đang tải dữ liệu...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- VIOLATIONS TABLE -->
+    <section class="section violations-section" id="violations">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge warning">
+                    <i data-lucide="shield-alert"></i>
+                    <span>Danh Sách Vi Phạm</span>
+                </div>
+                <h2 class="section-title">Tra Cứu <span class="gradient-text-warm">Phạt Nguội</span></h2>
+                <p class="section-desc">Danh sách các phương tiện có lỗi vi phạm giao thông trong cơ sở dữ liệu</p>
+            </div>
+
+            <div class="table-card animate-on-scroll">
+                <div class="table-toolbar">
+                    <div class="table-info">
+                        <span class="violation-badge">
+                            <i data-lucide="alert-circle"></i>
+                            <span id="violations-count">0 vi phạm</span>
+                        </span>
+                    </div>
+                    <div class="table-actions">
+                        <button class="btn-warning" id="btn-refresh-violations">
+                            <i data-lucide="refresh-cw"></i>
+                            <span>Tải lại</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-wrapper">
+                    <table class="data-table violations-table" id="violations-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Biển Số</th>
+                                <th>Lỗi Vi Phạm</th>
+                                <th>Số Tiền Phạt</th>
+                                <th>Trạng Thái</th>
+                                <th>Thời Gian VP</th>
+                            </tr>
+                        </thead>
+                        <tbody id="violations-tbody">
+                            <!-- Dynamic rows -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="pagination" id="violations-pagination"></div>
+
+                <div class="table-empty" id="violations-empty" style="display: none;">
+                    <i data-lucide="check-circle"></i>
+                    <p>Không có vi phạm nào</p>
+                </div>
+
+                <div class="table-loading" id="violations-loading">
+                    <div class="spinner"></div>
+                    <span>Đang tải dữ liệu...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SEARCH SECTION -->
+    <section class="section search-section" id="search">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="search"></i>
+                    <span>Tra Cứu Nhanh</span>
+                </div>
+                <h2 class="section-title">Tìm Kiếm <span class="gradient-text">Biển Số Xe</span></h2>
+                <p class="section-desc">Nhập biển số để tra cứu lịch sử đi qua camera và kiểm tra vi phạm</p>
+            </div>
+
+            <div class="search-card animate-on-scroll">
+                <div class="search-input-group">
+                    <div class="search-icon-wrap">
+                        <i data-lucide="search"></i>
+                    </div>
+                    <input type="text" id="search-input" class="search-input"
+                        placeholder="Nhập biển số xe, ví dụ: 29A-123.45" autocomplete="off">
+                    <button class="search-btn" id="btn-search">
+                        <i data-lucide="arrow-right"></i>
+                        <span>Tra cứu</span>
+                    </button>
+                </div>
+
+                <div class="search-hints">
+                    <span>Gợi ý:</span>
+                    <button class="hint-tag" data-plate="29A">29A</button>
+                    <button class="hint-tag" data-plate="30G">30G</button>
+                    <button class="hint-tag" data-plate="51H">51H</button>
+                    <button class="hint-tag" data-plate="15A">15A</button>
+                    <button class="hint-tag" data-plate="99A">99A</button>
+                </div>
+            </div>
+
+            <!-- Search Results -->
+            <div class="search-results-card" id="search-results-card" style="display: none;">
+                <div class="search-results-header">
+                    <h3><i data-lucide="file-search"></i> Kết quả tìm kiếm cho: <span id="search-query-display"></span>
+                    </h3>
+                    <span id="search-result-count" class="result-count"></span>
+                </div>
+                <div class="table-wrapper">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Biển Số</th>
+                                <th>Thời Gian</th>
+                                <th>Ảnh Gốc</th>
+                                <th>Ảnh Biển Số</th>
+                                <th>Vi Phạm</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search-tbody">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="search-empty" id="search-empty" style="display: none;">
+                    <i data-lucide="search-x"></i>
+                    <p>Không tìm thấy kết quả nào</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ARCHITECTURE SECTION -->
+    <section class="section arch-section" id="architecture">
+        <div class="container">
+            <div class="section-header animate-on-scroll">
+                <div class="section-badge">
+                    <i data-lucide="cpu"></i>
+                    <span>Kiến Trúc Hệ Thống</span>
+                </div>
+                <h2 class="section-title">Công Nghệ <span class="gradient-text">Sử Dụng</span></h2>
+            </div>
+
+            <div class="tech-grid animate-on-scroll">
+                <div class="tech-card">
+                    <div class="tech-icon yolo">
+                        <i data-lucide="brain"></i>
+                    </div>
+                    <h4>YOLOv10</h4>
+                    <p>Phát hiện phương tiện &amp; biển số xe thời gian thực</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon rabbit">
+                        <i data-lucide="message-square"></i>
+                    </div>
+                    <h4>RabbitMQ</h4>
+                    <p>Message Queue điều phối luồng ảnh tốc độ cao</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon pg">
+                        <i data-lucide="database"></i>
+                    </div>
+                    <h4>PostgreSQL</h4>
+                    <p>Lưu trữ lịch sử nhận diện &amp; danh sách phạt nguội</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon minio">
+                        <i data-lucide="hard-drive"></i>
+                    </div>
+                    <h4>MinIO</h4>
+                    <p>Object Storage lưu trữ ảnh xe &amp; biển số</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon qdrant">
+                        <i data-lucide="hexagon"></i>
+                    </div>
+                    <h4>Qdrant</h4>
+                    <p>Vector DB chống trùng lặp bằng AI similarity</p>
+                </div>
+                <div class="tech-card">
+                    <div class="tech-icon fastapi">
+                        <i data-lucide="zap"></i>
+                    </div>
+                    <h4>FastAPI</h4>
+                    <p>Backend API hiệu suất cao kết nối mọi thành phần</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <div class="logo-icon small">
+                        <i data-lucide="scan-line"></i>
+                    </div>
+                    <span class="logo-text">ALPR<span class="logo-accent">.AI</span></span>
+                </div>
+                <p class="footer-text">
+                    Bài tập lớn môn Trí Tuệ Nhân Tạo — BTL-THPTTTNT-36
+                </p>
+                <div class="footer-links">
+                    <span>Xây dựng với</span>
+                    <i data-lucide="heart" class="heart-icon"></i>
+                    <span>bởi nhóm sinh viên UET</span>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- IMAGE PREVIEW MODAL -->
+    <div class="modal-overlay" id="image-modal">
+        <div class="modal-content">
+            <button class="modal-close" id="modal-close">&times;</button>
+            <img id="modal-image" src="" alt="Ảnh xem trước">
+            <p class="modal-caption" id="modal-caption"></p>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="particles.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

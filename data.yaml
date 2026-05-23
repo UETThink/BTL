@@ -1,0 +1,4 @@
+train: D:/BTL/BTL-THPTTTNT-36/datasets/LP_detection/LP_detection/images/train
+val: D:/BTL/BTL-THPTTTNT-36/datasets/LP_detection/LP_detection/images/val
+nc: 1
+names: ['license_plate']

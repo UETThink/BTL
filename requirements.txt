@@ -1,0 +1,17 @@
+ultralytics
+opencv-python
+torch
+torchvision
+numpy
+matplotlib
+pandas
+
+psycopg2-binary
+minio
+qdrant-client
+
+pika
+fastapi
+uvicorn
+pydantic
+requests

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Data & Models (file nặng, không push lên Git)
+*.pt
+runs/
+datasets/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
