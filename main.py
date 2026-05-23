@@ -20,8 +20,8 @@ from ultralytics import YOLO
 print("[INFO] Đang khởi tạo hệ thống và tải các mô hình AI...")
 
 vehicle_detector = YOLO('result_train(pt)/vehicle_model.pt')   # Phát hiện phương tiện
-lp_detector = YOLO('result_train(pt)/lp_model.pt')             # Phát hiện biển số
-ocr_detector = YOLO('result_train(pt)/ocr_model.pt')           # Nhận diện ký tự
+lp_detector = YOLO('result_train(pt)/license_detect.pt')       # Phát hiện biển số
+ocr_detector = YOLO('result_train(pt)/ocr_dect.pt')            # Nhận diện ký tự
 
 # Model trích xuất vector đặc trưng (dùng để chống trùng lặp)
 resnet = models.resnet18(pretrained=True)

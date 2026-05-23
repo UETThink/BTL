@@ -6,7 +6,7 @@ import os
 os.environ["OPENCV_VIDEOIO_PRIORITY_MSMF"] = "0"
 
 # 1. Khởi tạo mô hình YOLO và Reader OCR
-model = YOLO('lp_model.pt')
+model = YOLO('result_train(pt)/license_detect.pt')
 # GPU=False nếu bạn chưa cài CUDA, GPU=True nếu đã cài thành công
 reader = easyocr.Reader(['en'], gpu=False)
 
