@@ -50,15 +50,15 @@ def parse_args():
         "--half", action="store_true", help="Bật FP16 trên GPU."
     )
     parser.add_argument(
-        "--det-conf", type=float, default=0.25, help="Conf detect (mặc định 0.25)."
+        "--det-conf", type=float, default=0.15, help="Conf detect (mặc định 0.15)."
     )
     parser.add_argument(
         "--ocr-conf", type=float, default=0.25, help="Conf OCR (mặc định 0.25)."
     )
     parser.add_argument(
-        "--thorough",
+        "--fast",
         action="store_true",
-        help="Chế độ kỹ: detect nhiều conf khác nhau để bắt biển khó (chậm hơn).",
+        help="Chế độ nhanh: 1 lần detect + 1 lần OCR (kém chính xác hơn).",
     )
     return parser.parse_args()
 
@@ -72,19 +72,22 @@ def resolve_device(name: str) -> str:
     return name
 
 
-def read_plate(plate_crop, model_ocr, conf, imgsz, device, half):
-    if plate_crop.size == 0:
-        return ""
+def upscale_plate(crop, target_h=96):
+    """Upscale biển số để OCR thấy ký tự rõ hơn."""
+    h, w = crop.shape[:2]
+    if h >= target_h:
+        return crop
+    scale = target_h / h
+    return cv2.resize(crop, (int(w * scale), target_h), interpolation=cv2.INTER_CUBIC)
+
+
+def _ocr_once(crop, model_ocr, conf, imgsz, device, half):
+    """1 lần OCR — trả về (text, num_chars)."""
     results = model_ocr(
-        plate_crop,
-        conf=conf,
-        imgsz=imgsz,
-        device=device,
-        half=half,
-        verbose=False,
+        crop, conf=conf, imgsz=imgsz, device=device, half=half, verbose=False
     )
     if not results or results[0].boxes is None or len(results[0].boxes) == 0:
-        return ""
+        return "", 0
     boxes = results[0].boxes.cpu().numpy()
     char_data = []
     for box in boxes:
@@ -92,15 +95,46 @@ def read_plate(plate_crop, model_ocr, conf, imgsz, device, half):
         cls = int(box.cls[0])
         ch = CHARACTERS[cls] if cls < len(CHARACTERS) else "?"
         char_data.append({"x": (x1 + x2) / 2, "y": (y1 + y2) / 2, "char": ch})
-    h, w = plate_crop.shape[:2]
-    return sort_characters_v2(char_data, h, w)
+    h, w = crop.shape[:2]
+    return sort_characters_v2(char_data, h, w), len(char_data)
 
 
-def detect_plates(frame, model_detect, conf, imgsz, device, half, thorough):
+def read_plate(plate_crop, model_ocr, conf, imgsz, device, half, multi=True):
+    """OCR với upscale + thử nhiều conf nếu kết quả không hợp lệ."""
+    if plate_crop.size == 0:
+        return ""
+    crop = upscale_plate(plate_crop, target_h=96)
+
+    if not multi:
+        text, _ = _ocr_once(crop, model_ocr, conf, imgsz, device, half)
+        return text
+
+    best_text = ""
+    best_score = -1  # ưu tiên: hợp lệ format > nhiều ký tự
+    for c in (conf, 0.15, 0.08):
+        text, n = _ocr_once(crop, model_ocr, c, imgsz, device, half)
+        if n == 0:
+            continue
+        valid, vscore = validate_plate_format(text)
+        if not valid:
+            valid, vscore = validate_plate_fallback(text)
+        # Score: ký tự + bonus nếu format chuẩn VN
+        score = n + (10 if valid else 0)
+        if score > best_score:
+            best_score = score
+            best_text = text
+    return best_text
+
+
+def detect_plates(frame, model_detect, conf, imgsz, device, half, fast):
     """Trả về list bbox [x1,y1,x2,y2,conf], dedup bằng IoU."""
-    configs = [conf]
-    if thorough:
-        configs = [conf, 0.1, 0.05]
+    if fast:
+        configs = [conf]
+    else:
+        # Multi-conf: bắt cả biển dễ và biển khó (nghiêng, mờ, xa)
+        configs = [conf, max(0.08, conf - 0.1), 0.05]
+        # Loại trùng
+        configs = sorted(set(round(c, 3) for c in configs), reverse=True)
 
     found = []
     for c in configs:
@@ -121,7 +155,6 @@ def detect_plates(frame, model_detect, conf, imgsz, device, half, thorough):
             if (x2 - x1) < 20 or (y2 - y1) < 15:
                 continue
             score = float(box.conf[0])
-            # Dedup
             dup = False
             for ex in found:
                 if compute_iou([x1, y1, x2, y2], ex[:4]) > 0.5:
@@ -135,16 +168,20 @@ def detect_plates(frame, model_detect, conf, imgsz, device, half, thorough):
 def process_one(img, model_detect, model_ocr, args, device):
     h, w = img.shape[:2]
     plates = detect_plates(
-        img, model_detect, args.det_conf, args.imgsz, device, args.half, args.thorough
+        img, model_detect, args.det_conf, args.imgsz, device, args.half, args.fast
     )
     results = []
     for x1, y1, x2, y2, conf in plates:
-        pad = 3
+        # Padding to nhỏ hơn cho biển nhỏ, lớn hơn cho biển to
+        pad = max(3, (y2 - y1) // 20)
         x1p, y1p = max(0, x1 - pad), max(0, y1 - pad)
         x2p, y2p = min(w, x2 + pad), min(h, y2 + pad)
         crop = img[y1p:y2p, x1p:x2p]
 
-        raw = read_plate(crop, model_ocr, args.ocr_conf, args.imgsz, device, args.half)
+        raw = read_plate(
+            crop, model_ocr, args.ocr_conf, args.imgsz, device, args.half,
+            multi=not args.fast,
+        )
         valid, score = validate_plate_format(raw)
         if not valid:
             valid, score = validate_plate_fallback(raw)
