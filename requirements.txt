@@ -1,17 +1,63 @@
-ultralytics
-opencv-python
-torch
-torchvision
-numpy
-matplotlib
-pandas
+# ===================================================================
+# LICENSE PLATE RECOGNITION — Dependencies
+# Python 3.11 (khuyến nghị). Test trên Windows 11 + RTX 3050.
+#
+# CÁCH CÀI:
+#   1. (KHUYẾN NGHỊ) Chạy script:  .\setup.ps1
+#   2. (THỦ CÔNG)    pip install -r requirements.txt
+#      Rồi cài torch + paddlepaddle GPU theo hướng dẫn cuối file.
+# ===================================================================
 
-psycopg2-binary
-minio
-qdrant-client
+# --- Core CV & ML ---
+ultralytics==8.4.51
+opencv-python==4.10.0.84
+opencv-python-headless==4.11.0.86  # fast-alpr cần cái này
+numpy==1.26.4
+pillow==11.3.0
+matplotlib==3.10.8
+pandas==2.2.2
+scikit-learn==1.5.1
 
-pika
-fastapi
-uvicorn
-pydantic
-requests
+# --- ALPR pipeline (fast-alpr + PaddleOCR) ---
+fast-alpr==0.4.0
+fast-plate-ocr==1.1.0
+open-image-models==0.5.1
+onnxruntime==1.17.1
+onnxruntime-gpu==1.17.1            # tự fallback CPU nếu không có CUDA
+paddleocr==2.7.3
+# paddlepaddle KHÔNG cài ở đây — xem hướng dẫn cuối file (GPU vs CPU)
+
+# --- OCR phụ trợ ---
+easyocr==1.7.2
+
+# --- Backend services (cho main.py) ---
+psycopg2-binary==2.9.11
+minio==7.2.20
+qdrant-client==1.18.0
+pika==1.4.1
+
+# --- Web API ---
+fastapi==0.136.1
+uvicorn==0.30.0
+pydantic==2.12.5
+pydantic-settings==2.6.0
+requests==2.33.1
+python-multipart>=0.0.9            # FastAPI upload form-data
+
+# ===================================================================
+# CÀI TORCH + PADDLE GPU (KHÔNG nằm trong file này vì cần index URL riêng)
+# -------------------------------------------------------------------
+# --- PyTorch GPU (CUDA 11.8) ---
+#   pip install torch==2.7.1+cu118 torchvision==0.22.1+cu118 ^
+#     --index-url https://download.pytorch.org/whl/cu118
+#
+# --- PyTorch CPU only ---
+#   pip install torch==2.7.1 torchvision==0.22.1
+#
+# --- PaddlePaddle GPU (CUDA 11.7/11.8) ---
+#   pip install paddlepaddle-gpu==2.6.1.post117 ^
+#     -f https://www.paddlepaddle.org.cn/whl/windows/mkl/avx/stable.html
+#
+# --- PaddlePaddle CPU only ---
+#   pip install paddlepaddle==2.6.2
+# ===================================================================
